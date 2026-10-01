@@ -6,9 +6,11 @@ import express from "express";
 import userRouter from "./app/user/user.route.js";
 import messageRouter from "./app/message/message.route.js";
 import authRouter from "./app/auth/auth.route.js";
-import { OTP } from "./app/auth/model/otp.model.js";
+import { logger } from "./common/logger/logger.js";
+import cors from "cors";
 
 const app = express();
+app.use(cors({ origin: "http://localhost:4200" }));
 // parse incoming requests buffer to object
 app.use(express.json());
 
@@ -19,10 +21,16 @@ app.use("/message", messageRouter);
 
 // Global error handler
 app.use((err, req, res, next) => {
-  res.json({
-    message: err.message,
+  logger.error(err.message, err);
+  if (err.isOperational === true) {
+    return res.status(err.statusCode).json({
+      message: err.message,
+      success: false,
+    });
+  }
+  return res.status(500).json({
+    error: "Something went wrong",
     success: false,
-    stack: err.stack,
   });
 });
-app.listen(3000, () => console.log("Server is running on port 3000"));
+app.listen(3000, () => logger.info("Server is running on port 3000"));
